@@ -1,0 +1,12 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: filterPoc
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: MyDB
