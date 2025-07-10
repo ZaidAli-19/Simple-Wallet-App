@@ -3,6 +3,7 @@ package com.example.filterPoc.controller;
 import com.example.filterPoc.model.User;
 import com.example.filterPoc.request.UserRequest;
 import com.example.filterPoc.service.UserService;
+import com.example.filterPoc.serviceImpl.UserServiceImpl;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,5 +28,9 @@ public class UserController {
     @GetMapping("/getById/{id}")
     public User getById(@PathVariable String id){
         return userService.getById(id);
+    }
+    @PutMapping("/update/{id}")
+    public void update(@PathVariable String id,@RequestBody UserRequest request){
+        userService.updateUser(id,request);
     }
 }

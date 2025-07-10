@@ -1,10 +1,12 @@
 package com.example.filterPoc.controller;
 
-import com.example.filterPoc.model.Wallet;
+import com.example.filterPoc.request.PaginationRequest;
 import com.example.filterPoc.request.WalletRequest;
+import com.example.filterPoc.response.TransactionResponse;
 import com.example.filterPoc.response.WalletResponse;
 import com.example.filterPoc.response.WalletsResponse;
 import com.example.filterPoc.service.WalletService;
+import com.example.filterPoc.serviceImpl.WalletServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,11 @@ public class WalletController {
     @PostMapping("/create")
     public String createWallet(@RequestBody WalletRequest walletRequest) {
         return walletService.createWallet(walletRequest);
+    }
+
+    @PostMapping("/getRecentTransactions/{walletId}")
+    public List<TransactionResponse> getRecentTransactionsByUserId(@PathVariable String walletId, @RequestBody PaginationRequest request){
+        return walletService.getRecentTransactionsByUserId(walletId,request);
     }
 
 
@@ -44,8 +51,12 @@ public class WalletController {
         return walletService.showBalance(walletId);
     }
 
-    @GetMapping("/downloadPdf/{walletId}")
+    @PostMapping("/downloadPdf/{walletId}")
     public void downloadTransactions(@PathVariable String walletId, HttpServletResponse response) throws IOException {
         walletService.downloadTransactions(walletId, response);
+    }
+    @DeleteMapping("/delete/{walletId}")
+    public String delete(@PathVariable String walletId){
+       return walletService.deleteWallet(walletId);
     }
 }

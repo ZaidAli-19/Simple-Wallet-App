@@ -17,6 +17,7 @@ public class TransactionResponse {
     private Double amount;
     private String description;
     private LocalDateTime dateTime;
+    private String walletId;
 
     public TransactionResponse(Transaction transaction) {
         this.amount = transaction.getAmount();
@@ -24,5 +25,6 @@ public class TransactionResponse {
         this.description = transaction.getDescription();
         this.transactionId = transaction.getTransactionId();
         this.transactionType = transaction.getTransactionType();
+        this.walletId = transaction.getWallet().getWalletId();
     }
 }
