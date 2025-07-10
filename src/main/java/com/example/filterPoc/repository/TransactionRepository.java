@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface TransactionRepository extends MongoRepository<Transaction,String> {
-List<Transaction> findByWallet_walletIdAndUser_Uuid(String walletId,String uuid, Pageable pageable);
-List<Transaction> findByWallet_walletIdAndUser_Uuid(String walletId,String uuid, Sort sort);
+List<Transaction> findByWallet_walletId(String walletId, Pageable pageable);
+List<Transaction> findByWallet_walletId(String walletId, Sort sort);
 }

@@ -6,7 +6,6 @@ import lombok.Data;
 import java.time.LocalDateTime;
 @Data
 public class TransactionRequest {
-    private String uuid;
     private String walletId;
     private Double amount;
     private TransactionType transactionType;

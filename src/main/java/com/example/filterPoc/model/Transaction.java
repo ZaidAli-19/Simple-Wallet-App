@@ -19,8 +19,5 @@ public class Transaction {
     private String description;
     private LocalDateTime dateTime;
     @DBRef
-    private User user;
-    @JsonIgnore
-    @DBRef
     private Wallet wallet;
 }
