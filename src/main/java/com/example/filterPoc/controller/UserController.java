@@ -2,8 +2,11 @@ package com.example.filterPoc.controller;
 
 import com.example.filterPoc.model.User;
 import com.example.filterPoc.request.UserRequest;
+import com.example.filterPoc.response.UserResponse;
 import com.example.filterPoc.service.UserService;
 import com.example.filterPoc.serviceImpl.UserServiceImpl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,15 +25,17 @@ public class UserController {
         return userService.createUser(request);
     }
     @GetMapping("/getAll")
-    public List<User> getAll(){
-        return userService.getAll();
+    public ResponseEntity<List<UserResponse>> getAll(){
+        return new ResponseEntity<>(userService.getAll(),HttpStatus.OK);
     }
-    @GetMapping("/getById/{id}")
-    public User getById(@PathVariable String id){
-        return userService.getById(id);
+    @GetMapping("/getInfoById/{id}")
+    public ResponseEntity<UserResponse> getById(@PathVariable String id){
+        return new ResponseEntity<>(userService.getById(id), HttpStatus.OK);
     }
     @PutMapping("/update/{id}")
-    public void update(@PathVariable String id,@RequestBody UserRequest request){
-        userService.updateUser(id,request);
+    public ResponseEntity<String> update(@PathVariable String id,@RequestBody UserRequest request){
+        return new ResponseEntity<>(userService.updateUser(id,request),HttpStatus.OK);
     }
-}
+
+    }
+

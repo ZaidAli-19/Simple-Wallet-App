@@ -1,5 +1,7 @@
 package com.example.filterPoc.controller;
 
+import com.example.filterPoc.exceptionHandling.CannotDeleteWalletException;
+import com.example.filterPoc.exceptionHandling.UserNotFoundException;
 import com.example.filterPoc.request.PaginationRequest;
 import com.example.filterPoc.request.WalletRequest;
 import com.example.filterPoc.response.TransactionResponse;
@@ -8,6 +10,8 @@ import com.example.filterPoc.response.WalletsResponse;
 import com.example.filterPoc.service.WalletService;
 import com.example.filterPoc.serviceImpl.WalletServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -42,8 +46,8 @@ public class WalletController {
 
     //this returns all the wallets of a user by userId
     @GetMapping("/getUserWallets/{uuid}")
-    public List<WalletsResponse> wallets(@PathVariable String uuid) {
-        return walletService.getAllInfo(uuid);
+    public ResponseEntity<List<WalletsResponse>> wallets(@PathVariable String uuid) {
+            return new ResponseEntity<>(walletService.getAllInfo(uuid), HttpStatus.OK);
     }
 
     @GetMapping("/showBalance/{walletId}")
@@ -56,7 +60,7 @@ public class WalletController {
         walletService.downloadTransactions(walletId, response);
     }
     @DeleteMapping("/delete/{walletId}")
-    public String delete(@PathVariable String walletId){
-       return walletService.deleteWallet(walletId);
+    public ResponseEntity<String>delete(@PathVariable String walletId){
+   return new ResponseEntity<>(walletService.deleteWallet(walletId),HttpStatus.OK);
     }
 }

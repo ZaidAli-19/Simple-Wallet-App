@@ -1,5 +1,8 @@
 package com.example.filterPoc.serviceImpl;
 
+import com.example.filterPoc.exceptionHandling.CannotDeleteWalletException;
+import com.example.filterPoc.exceptionHandling.UserNotFoundException;
+import com.example.filterPoc.exceptionHandling.WalletNotFoundException;
 import com.example.filterPoc.model.Transaction;
 import com.example.filterPoc.model.Wallet;
 import com.example.filterPoc.repository.TransactionRepository;
@@ -11,6 +14,7 @@ import com.example.filterPoc.response.TransactionResponse;
 import com.example.filterPoc.response.WalletResponse;
 import com.example.filterPoc.response.WalletsResponse;
 import com.example.filterPoc.service.WalletService;
+import com.example.filterPoc.util.ResponseMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -42,23 +46,26 @@ public class WalletServiceImpl implements WalletService {
             Wallet wallet = new Wallet();
             wallet.setBalance(0d);
             wallet.setUser(userRepository.findById(walletRequest.getUserId())
-                    .orElseThrow(() -> new RuntimeException("invalid user id")));
+                    .orElseThrow(() -> new UserNotFoundException("Cannot find user with id:"+walletRequest.getUserId()+" ! Please provide a valid user Id.")));
             walletRepository.save(wallet);
             return "Wallet created successfully.\n"+"WalletId : "+wallet.getWalletId();
     }
 
     public WalletResponse getInfo(String id) {
-         return new WalletResponse(walletRepository.findById(id).orElseThrow
-                 (()->new RuntimeException("invalid id")));
+         return ResponseMapper.toWalletResponse(walletRepository.findById(id).orElseThrow
+                 (()->new WalletNotFoundException("invalid id")));
     }
 
-    public List<WalletsResponse> getAllInfo(String uuid) {
+    public List<WalletsResponse> getAllInfo(String uuid){
         List<Wallet> wallet = walletRepository.findByUser_Uuid(uuid);
-      return  wallet.stream().map(WalletsResponse::new).toList();
+        if(wallet.isEmpty()){
+            throw new UserNotFoundException("Invalid user id! Please provide a valid user Id");
+        }
+      return  wallet.stream().map(ResponseMapper::toWalletsResponse).toList();
     }
 
     public String showBalance(String walletId) {
-        Wallet wallet = walletRepository.findById(walletId).orElseThrow(() -> new RuntimeException("invalid Id"));
+        Wallet wallet = walletRepository.findById(walletId).orElseThrow(() -> new WalletNotFoundException("Wallet Id is not valid!"));
 return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalance()+".";
     }
 
@@ -109,7 +116,7 @@ return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalanc
             walletRepository.delete(wallet);
             return "wallet deleted successfully!";
         }
-            throw new RuntimeException("Wallet deletion failed because wallet has balance in it.");
+            throw new CannotDeleteWalletException("Wallet deletion failed because wallet has balance in it.");
     }
 
 
@@ -120,11 +127,11 @@ return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalanc
                     Sort.by(Sort.Direction.DESC,
                             request.getSortBy()));
             List<Transaction> byWalletWalletId = transactionRepository.findByWallet_walletId(walletId, pageable);
-            return byWalletWalletId.stream().map(TransactionResponse::new).toList();
+            return byWalletWalletId.stream().map(ResponseMapper::toTransactionResponse).toList();
         } else {
             Sort sort = Sort.by(request.getSortBy()).descending();
             List<Transaction> byWalletWalletId = transactionRepository.findByWallet_walletId(walletId, sort);
-            return byWalletWalletId.stream().map(TransactionResponse::new).toList();
+            return byWalletWalletId.stream().map(ResponseMapper::toTransactionResponse).toList();
         }
     }
 

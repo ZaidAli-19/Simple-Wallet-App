@@ -12,10 +12,10 @@ import java.util.List;
 @Data
 public class Wallet {
     @Id
-   private String walletId;
-   private Double balance;
-   @DBRef
-   private User user;
-   @DBRef
-    private List<Transaction> transactionHistory=new ArrayList<>();
+    private String walletId;
+    private Double balance;
+    @DBRef
+    private User user;
+    @DBRef
+    private List<Transaction> transactionHistory = new ArrayList<>();
 }

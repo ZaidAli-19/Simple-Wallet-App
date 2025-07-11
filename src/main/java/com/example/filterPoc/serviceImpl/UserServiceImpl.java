@@ -1,11 +1,15 @@
 package com.example.filterPoc.serviceImpl;
 
+import com.example.filterPoc.exceptionHandling.TransactionNotFoundException;
+import com.example.filterPoc.exceptionHandling.UserNotFoundException;
 import com.example.filterPoc.factoryPattern.UserRoleService;
 import com.example.filterPoc.factoryPattern.UserServiceFactory;
 import com.example.filterPoc.model.User;
 import com.example.filterPoc.repository.UserRepository;
 import com.example.filterPoc.request.UserRequest;
+import com.example.filterPoc.response.UserResponse;
 import com.example.filterPoc.service.UserService;
+import com.example.filterPoc.util.ResponseMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,6 +29,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setGender(request.getGender());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setPassword(request.getPassword());
         user.setUserType(request.getUserType());
@@ -34,21 +39,22 @@ public class UserServiceImpl implements UserService {
         if (serviceByType != null) {
             return serviceByType.getUserInfo();
         } else {
-            throw new RuntimeException("user is not valid");
+            throw new TransactionNotFoundException("UserType is not valid!");
         }
     }
 
-    public List<User> getAll() {
+    public List<UserResponse> getAll() {
         List<User> user = userRepository.findAll();
-        return user;
+        return user.stream().map(ResponseMapper::toUserResponse).toList();
     }
 
-    public User getById(String id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("error"));
+    public UserResponse getById(String id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("Please provide a valid user id."));
+        return ResponseMapper.toUserResponse(user);
     }
 
-    public void updateUser(String id, UserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("invalid id"));
+    public String updateUser(String id, UserRequest request) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("Invalid user Id! Please provide a valid user Id."));
         if(request.getFirstName()!=null){
             user.setFirstName(request.getFirstName());
         }
@@ -65,5 +71,7 @@ public class UserServiceImpl implements UserService {
             user.setEmail(request.getEmail());
         }
         userRepository.save(user);
+        return "User updated successfully";
     }
+
 }
