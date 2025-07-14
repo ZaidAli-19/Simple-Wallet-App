@@ -3,10 +3,16 @@ server:
 
 spring:
   application:
-    name: filterPoc
+    name: walletApp
 
   data:
     mongodb:
       host: localhost
       port: 27017
       database: MyDB
+
+      logging:
+        level:
+          com:
+            example:
+              filterPoc:DEBUG
