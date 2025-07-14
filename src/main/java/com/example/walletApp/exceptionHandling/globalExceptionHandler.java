@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class globalExceptionHandler {
+
     @ExceptionHandler(value = CannotDeleteWalletException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ErrorResponse handleCannotDeleteWalletException(CannotDeleteWalletException e, HttpServletRequest request) {

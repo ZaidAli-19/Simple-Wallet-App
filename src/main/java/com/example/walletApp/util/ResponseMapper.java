@@ -11,6 +11,8 @@ import com.example.walletApp.response.WalletsResponse;
 import java.util.List;
 
 public class ResponseMapper {
+
+
     public static UserResponse toUserResponse(User user){
         UserResponse userResponse=new UserResponse();
         userResponse.setUserType(user.getUserType());

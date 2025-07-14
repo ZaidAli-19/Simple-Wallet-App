@@ -19,4 +19,5 @@ public class User {
     private String phoneNumber;
     private String password;
     private UserType userType;
+    private Boolean isDeleted;
 }

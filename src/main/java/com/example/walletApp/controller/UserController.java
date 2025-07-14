@@ -3,6 +3,8 @@ package com.example.walletApp.controller;
 import com.example.walletApp.request.UserRequest;
 import com.example.walletApp.response.UserResponse;
 import com.example.walletApp.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,26 +19,26 @@ public class UserController {
     }
 
     @PostMapping("/create")
-    public String createUser(@RequestBody UserRequest request){
-        return userService.createUser(request);
+    public ResponseEntity<String> createUser(@RequestBody UserRequest request){
+       return new ResponseEntity<>(userService.createUser(request), HttpStatus.CREATED);
     }
     @GetMapping("/getAll")
-    public List<UserResponse> getAll(){
-        return userService.getAll();
+    public ResponseEntity<List<UserResponse>> getAll(){
+       return new ResponseEntity<>(userService.getAll(),HttpStatus.OK);
     }
 
     @GetMapping("/getInfoById/{id}")
-    public UserResponse getById(@PathVariable String id){
-        return userService.getById(id);
+    public ResponseEntity<UserResponse> getById(@PathVariable String id){
+        return new ResponseEntity<>( userService.getById(id),HttpStatus.OK);
     }
 
     @PutMapping("/update/{id}")
-    public String update(@PathVariable String id,@RequestBody UserRequest request){
-        return userService.updateUser(id,request);
+    public ResponseEntity<String > update(@PathVariable String id,@RequestBody UserRequest request){
+        return new ResponseEntity<>(userService.updateUser(id,request),HttpStatus.OK);
     }
     @DeleteMapping("/delete/{id}")
-    public String delete(@PathVariable String id){
-        return userService.deleteUser(id);
+    public ResponseEntity<String> delete(@PathVariable String id){
+        return new ResponseEntity<>(userService.deleteUser(id),HttpStatus.OK);
     }
     }
 

@@ -4,6 +4,7 @@ import com.example.walletApp.exceptionHandling.CannotDeleteWalletException;
 import com.example.walletApp.exceptionHandling.UserNotFoundException;
 import com.example.walletApp.exceptionHandling.WalletNotFoundException;
 import com.example.walletApp.model.Transaction;
+import com.example.walletApp.model.User;
 import com.example.walletApp.model.Wallet;
 import com.example.walletApp.repository.TransactionRepository;
 import com.example.walletApp.repository.UserRepository;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class WalletServiceImpl implements WalletService {
@@ -44,48 +46,63 @@ public class WalletServiceImpl implements WalletService {
 
 
     public String createWallet(WalletRequest walletRequest) throws RuntimeException {
-            Wallet wallet = new Wallet();
-            wallet.setBalance(0d);
-            wallet.setUser(userRepository.findById(walletRequest.getUserId())
-                    .orElseThrow(() -> new UserNotFoundException("Cannot find user with id:"+walletRequest.getUserId()+" ! Please provide a valid user Id.")));
-            walletRepository.save(wallet);
-            return "Wallet created successfully.\n"+"WalletId : "+wallet.getWalletId();
-    }
-
-//This method will return a wallet and it's transactions.
-    public WalletResponse getInfoByWalletId(String id) {
-         return ResponseMapper.toWalletResponse(walletRepository.findById(id).orElseThrow
-                 (()->new WalletNotFoundException("Invalid wallet id! please provide a valid wallet id.")));
-    }
-
-//This method will return all the wallets of a user since a user can have multiple wallets.
-    public List<WalletsResponse> getAllWalletsByUuid(String uuid){
-        List<Wallet> wallet = walletRepository.findByUser_Uuid(uuid);
-        if(wallet.isEmpty()){
-            throw new UserNotFoundException("Invalid user id! Please provide a valid user Id");
+        Wallet wallet = new Wallet();
+        wallet.setWalletId(UUID.randomUUID().toString());
+        wallet.setBalance(0d);
+        User user = userRepository.findById(walletRequest.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("Cannot find user with id:" + walletRequest.getUserId() + " ! Please provide a valid user Id."));
+        if (user.getIsDeleted()) {
+            throw new UserNotFoundException("This user is already deleted and does not exist.");
         }
-      return  wallet.stream().map(ResponseMapper::toWalletsResponse).toList();
+        wallet.setUser(user);
+        wallet.setIsDeleted(false);
+        walletRepository.save(wallet);
+        return "Wallet creation successful of user : " + walletRequest.getUserId() + "," + "\n" + "WalletId : " + wallet.getWalletId() + ".";
+    }
+
+    //This method will return a wallet and it's transactions.
+    public WalletResponse getInfoByWalletId(String id) {
+        Wallet wallet = walletRepository.findById(id).orElseThrow
+                (() -> new WalletNotFoundException("Invalid wallet id! please provide a valid wallet id."));
+        if (wallet.getIsDeleted()) {
+            throw new WalletNotFoundException("This wallet is already deleted!");
+        }
+        return ResponseMapper.toWalletResponse(wallet);
+    }
+
+    //This method will return all the wallets of a user since a user can have multiple wallets.
+    public List<WalletsResponse> getAllWalletsByUuid(String uuid) {
+        List<Wallet> wallet = walletRepository.findByUser_Uuid(uuid).stream().filter(wallet1 -> !wallet1.getIsDeleted()).toList();
+        if (wallet.isEmpty()) {
+            throw new WalletNotFoundException("Cannot retrieve wallets of user with uuid:" + uuid + ", Either uuid is invalid or user does not have wallets.");
+        }
+        return wallet.stream().map(ResponseMapper::toWalletsResponse).toList();
     }
 
 
-//This will simply return the current balance of a wallet.
+    //This will simply return the current balance of a wallet.
     public String showBalance(String walletId) {
         Wallet wallet = walletRepository.findById(walletId).orElseThrow(() -> new WalletNotFoundException("Wallet Id is not valid!"));
-return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalance()+".";
+        if (wallet.getIsDeleted()) {
+            throw new WalletNotFoundException("This wallet has been already deleted! Cannot retrieve info.");
+        }
+        return "current balance in wallet " + wallet.getWalletId() + " is " + wallet.getBalance() + ".";
     }
-
 
 
     //method for downloading transactions in Excel file format
     public void downloadTransactions(String walletId, HttpServletResponse response) throws IOException {
 
         Wallet wallet = walletRepository.findById(walletId)
-                .orElseThrow(()->new RuntimeException("invalid id"));
+                .orElseThrow(() -> new RuntimeException("invalid id"));
+        if (wallet.getIsDeleted()) {
+            throw new WalletNotFoundException("The wallet has been already deleted! Cannot download transactions.");
+        }
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=transactions.xlsx");
 
-        XSSFWorkbook workbook=new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Transactions");
 
         CreationHelper createHelper = workbook.getCreationHelper();
@@ -99,9 +116,10 @@ return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalanc
         row.createCell(3).setCellValue("Description");
         row.createCell(4).setCellValue("Date&Time");
 
-        int rowNum=1;
-        int count=1;
-        for(Transaction transaction: wallet.getTransactionHistory()){
+        int rowNum = 1;
+        int count = 1;
+        List<Transaction> list = wallet.getTransactionHistory().stream().filter(transaction -> !transaction.getIsDeleted()).toList();
+        for (Transaction transaction : list) {
             XSSFRow row1 = sheet.createRow(rowNum++);
             row1.createCell(0).setCellValue(count++);
             row1.createCell(1).setCellValue(transaction.getTransactionType().toString());
@@ -118,26 +136,32 @@ return "current balance in wallet "+wallet.getWalletId()+" is "+wallet.getBalanc
 
     public String deleteWallet(String walletId) {
         Wallet wallet = walletRepository.findById(walletId).orElseThrow(() -> new RuntimeException("invalid id"));
-        if(wallet.getBalance()==0){
-            walletRepository.delete(wallet);
-            return "wallet deleted successfully!";
+        if (wallet.getBalance() != 0) {
+            throw new CannotDeleteWalletException("Cannot delete wallet because the wallet has some balance in it.");
         }
-            throw new CannotDeleteWalletException("Wallet deletion failed because wallet has balance in it.");
+        wallet.setIsDeleted(true);
+        List<Transaction> transactions = transactionRepository.findByWallet_walletId(wallet.getWalletId());
+        for (Transaction transaction : transactions) {
+            transaction.setIsDeleted(true);
+        }
+        transactionRepository.saveAll(transactions);
+        walletRepository.save(wallet);
+        return "Wallet deleted successfully";
     }
 
-//This method will return the recent transactions , Pagination is implemented here.
+    //This method will return the recent transactions , Pagination is implemented here.
     public List<TransactionResponse> getRecentTransactionsByWalletId(String walletId, PaginationRequest request) {
         if (request.getPageSize() != null && request.getPageNumber() != null) {
             Pageable pageable = PageRequest.of(request.getPageNumber() - 1,
                     request.getPageSize(),
                     Sort.by(Sort.Direction.DESC,
                             request.getSortBy()));
-            List<Transaction> byWalletWalletId = transactionRepository.findByWallet_walletId(walletId, pageable);
-            return byWalletWalletId.stream().map(ResponseMapper::toTransactionResponse).toList();
+            List<Transaction> transactions = transactionRepository.findByWallet_walletId(walletId, pageable).stream().filter(transaction -> !transaction.getIsDeleted()).toList();
+            return transactions.stream().map(ResponseMapper::toTransactionResponse).toList();
         } else {
             Sort sort = Sort.by(request.getSortBy()).descending();
-            List<Transaction> byWalletWalletId = transactionRepository.findByWallet_walletId(walletId, sort);
-            return byWalletWalletId.stream().map(ResponseMapper::toTransactionResponse).toList();
+            List<Transaction> transactions = transactionRepository.findByWallet_walletId(walletId, sort).stream().filter(transaction -> !transaction.getIsDeleted()).toList();
+            return transactions.stream().map(ResponseMapper::toTransactionResponse).toList();
         }
     }
 

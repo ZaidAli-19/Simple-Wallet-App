@@ -12,4 +12,6 @@ import java.util.List;
 public interface TransactionRepository extends MongoRepository<Transaction,String> {
 List<Transaction> findByWallet_walletId(String walletId, Pageable pageable);
 List<Transaction> findByWallet_walletId(String walletId, Sort sort);
+
+    List<Transaction>findByWallet_walletId(String walletId);
 }

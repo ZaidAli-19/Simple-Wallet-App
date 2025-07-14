@@ -15,6 +15,7 @@ import com.example.walletApp.util.ResponseMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
 
     public String createUser(UserRequest request) {
         User user = new User();
+        user.setUuid(UUID.randomUUID().toString());
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -37,28 +39,37 @@ public class UserServiceImpl implements UserService {
         user.setPhoneNumber(request.getPhoneNumber());
         user.setPassword(request.getPassword());
         user.setUserType(request.getUserType());
+        user.setIsDeleted(false);
         userRepository.save(user);
 
         UserRoleService serviceByType = serviceFactory.getServiceByType(request.getUserType());
         if (serviceByType != null) {
             return serviceByType.getUserInfo();
         } else {
-            throw new TransactionNotFoundException("UserType is not valid!");
+            throw new ResourceNotFoundException("UserType is not valid!");
         }
     }
 
     public List<UserResponse> getAll() {
-        List<User> user = userRepository.findAll();
+        List<User> user = userRepository.findAll()
+                .stream()
+                .filter(user1 -> !user1.getIsDeleted()).toList();
         return user.stream().map(ResponseMapper::toUserResponse).toList();
     }
 
     public UserResponse getById(String id) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("Please provide a valid user id."));
+        if(user.getIsDeleted()){
+            throw new UserNotFoundException("This user is already deleted.");
+        }
         return ResponseMapper.toUserResponse(user);
     }
 
     public String updateUser(String id, UserRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("Invalid user Id! Please provide a valid user Id."));
+        if (user.getIsDeleted()){
+            throw new UserNotFoundException("This user is already deleted!.");
+        }
         if(request.getFirstName()!=null){
             user.setFirstName(request.getFirstName());
         }
@@ -81,8 +92,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public String deleteUser(String id) {
         User user = userRepository.findById(id).orElseThrow(()->new UserNotFoundException("Invalid user Id."));
-        if (walletRepository.findByUser_Uuid(id).isEmpty()){
-            userRepository.delete(user);
+        if (user.getIsDeleted()){
+            throw new UserNotFoundException("This user has already been deleted.");
+        }
+        if (walletRepository.findByUser_Uuid(id)
+                .stream().filter(user1-> !user1.getIsDeleted())
+                .toList().isEmpty()){
+            user.setIsDeleted(true);
+            userRepository.save(user);
             return "User deleted successfully.";
         }
         throw new ResourceNotFoundException("Cannot delete user because the user has active wallets.");

@@ -19,4 +19,5 @@ public class Transaction {
     private LocalDateTime dateTime;
     @DBRef
     private Wallet wallet;
+    private Boolean isDeleted;
 }
