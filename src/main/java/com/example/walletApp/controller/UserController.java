@@ -22,6 +22,7 @@ public class UserController {
     public ResponseEntity<String> createUser(@RequestBody UserRequest request){
        return new ResponseEntity<>(userService.createUser(request), HttpStatus.CREATED);
     }
+
     @GetMapping("/getAll")
     public ResponseEntity<List<UserResponse>> getAll(){
        return new ResponseEntity<>(userService.getAll(),HttpStatus.OK);

@@ -14,8 +14,9 @@ public class Wallet {
     @Id
     private String walletId;
     private Double balance;
+    private Boolean isDeleted;
     @DBRef
     private User user;
+    @DBRef
     private List<Transaction> transactionHistory = new ArrayList<>();
-    private Boolean isDeleted;
 }
